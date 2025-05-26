@@ -9,7 +9,7 @@ def get_openai_recommendations():
     openai.api_key = os.environ["OPENAI_API_KEY"]
 
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-4-turbo",  # Updated model name
         messages=[
             {"role": "system", "content": "You are a signal-sorting AI trained to find betting and domain market edge."},
             {"role": "user", "content": "Give me top sports bets and expiring domain flips with high ROI today."}
@@ -35,3 +35,4 @@ if __name__ == "__main__":
     raw_output = get_openai_recommendations()
     append_to_sheet(raw_output)
     print("✅ Dispatch sent.")
+
