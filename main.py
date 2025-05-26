@@ -15,7 +15,7 @@ def within_schedule():
     return 8 <= now.hour <= 23
 
 def get_openai_recommendations():
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+    client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
     prompt = (
         "You are LineWolf, a sharp sports bettor and domain scout.\n"
@@ -26,12 +26,12 @@ def get_openai_recommendations():
         "Content: Your alert text goes here"
     )
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 def parse_alerts(text):
     lines = text.strip().split("\n")
@@ -80,3 +80,4 @@ if __name__ == "__main__":
         print("✅ Done.")
     else:
         print("⚠️ No alerts parsed.")
+
