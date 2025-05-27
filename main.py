@@ -1,8 +1,8 @@
 
 import subprocess
 
-# Run LineWolf Dispatcher (calls OpenAI)
+# Run GPT-powered dispatcher
 subprocess.run(["python3", "main_dispatcher.py"])
 
-# Run Line Movement Poller (calls TheOddsAPI only)
+# Run line movement tracking logic
 subprocess.run(["python3", "line_movement_poller.py"])
