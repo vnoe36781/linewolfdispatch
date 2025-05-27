@@ -1,10 +1,11 @@
+
 import requests
 import openai
 import json
 import time
 import csv
 from datetime import datetime
-from signals import get_all_composite_signals  # must be implemented to return a list of signal dicts
+from signals import get_all_composite_signals
 
 # CONFIG
 OPENAI_API_KEY = "your-openai-api-key"
@@ -16,7 +17,7 @@ CONFIDENCE_THRESHOLD = 7.0
 openai.api_key = OPENAI_API_KEY
 
 def build_gpt_prompt(signal):
-    return f"""
+    return f""""
 Game: {signal['game']}
 Line Move: {signal['line']}
 Public Handle: {signal['handle']}
@@ -26,7 +27,7 @@ Weather: {signal['weather']}
 Matchup Mismatch: {signal['matchup']}
 Composite Score: {signal['composite_score']}
 [bankroll=${BANKROLL}]
-"""
+""""
 
 def get_openai_recommendation(context):
     response = openai.ChatCompletion.create(
@@ -41,8 +42,7 @@ def get_openai_recommendation(context):
 
 def send_to_discord(message):
     payload = {
-        "content": f"**LineWolf AI Recommendation**
-{message}"
+        "content": f"**LineWolf AI Recommendation**\n{message}"
     }
     headers = {"Content-Type": "application/json"}
     requests.post(DISCORD_WEBHOOK_URL, data=json.dumps(payload), headers=headers)
@@ -68,7 +68,7 @@ def main():
         confidence = extract_confidence_score(recommendation)
 
         if confidence is None or confidence < CONFIDENCE_THRESHOLD:
-            continue  # skip low-confidence picks
+            continue
 
         send_to_discord(recommendation)
         log_feedback(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signal['game'], recommendation, confidence)
