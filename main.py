@@ -1,38 +1,77 @@
-import os
+import requests
 import openai
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import json
+import time
+import csv
 from datetime import datetime
-import pytz
+from signals import get_all_composite_signals  # must be implemented to return a list of signal dicts
 
-def get_openai_recommendations():
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+# CONFIG
+OPENAI_API_KEY = "your-openai-api-key"
+DISCORD_WEBHOOK_URL = "your-discord-webhook-url"
+BANKROLL = 20000
+FEEDBACK_FILE = "feedback_tracker.csv"
+CONFIDENCE_THRESHOLD = 7.0
 
+openai.api_key = OPENAI_API_KEY
+
+def build_gpt_prompt(signal):
+    return f"""
+Game: {signal['game']}
+Line Move: {signal['line']}
+Public Handle: {signal['handle']}
+Sharp Sentiment: {signal['sentiment']}
+Injuries: {signal['injuries']}
+Weather: {signal['weather']}
+Matchup Mismatch: {signal['matchup']}
+Composite Score: {signal['composite_score']}
+[bankroll=${BANKROLL}]
+"""
+
+def get_openai_recommendation(context):
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",  # Updated model name
+        model="gpt-4-turbo",
         messages=[
-            {"role": "system", "content": "You are a signal-sorting AI trained to find betting and domain market edge."},
-            {"role": "user", "content": "Give me top sports bets and expiring domain flips with high ROI today."}
+            {"role": "system", "content": "You are a tactical sports betting analyst. Use market signals, sentiment overlays, and environmental context to identify high-confidence plays. Avoid public traps. Prioritize sharp alignment, matchup mismatch, and actionable line opportunities. Output: bet recommendation, confidence score (1–10), % of bankroll to risk, and explanation."},
+            {"role": "user", "content": context}
         ],
-        temperature=0.7
+        temperature=0.3
     )
+    return response['choices'][0]['message']['content']
 
-    return response["choices"][0]["message"]["content"]
+def send_to_discord(message):
+    payload = {
+        "content": f"**LineWolf AI Recommendation**
+{message}"
+    }
+    headers = {"Content-Type": "application/json"}
+    requests.post(DISCORD_WEBHOOK_URL, data=json.dumps(payload), headers=headers)
 
-def append_to_sheet(content):
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('creds.json', scope)
-    client = gspread.authorize(creds)
+def log_feedback(date, game, recommendation, confidence, action_taken="pending", outcome="pending"):
+    with open(FEEDBACK_FILE, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([date, game, recommendation, confidence, action_taken, outcome])
 
-    sheet = client.open("LineWolf Dispatch").sheet1
-    est = pytz.timezone("US/Eastern")
-    now = datetime.now(est).strftime("%Y-%m-%d %H:%M:%S")
+def extract_confidence_score(text):
+    try:
+        for line in text.splitlines():
+            if "confidence" in line.lower():
+                return float([word for word in line.split() if word.replace('.', '', 1).isdigit()][0])
+    except:
+        return None
 
-    sheet.append_row([now, content])
+def main():
+    signals = get_all_composite_signals()
+    for signal in signals:
+        prompt = build_gpt_prompt(signal)
+        recommendation = get_openai_recommendation(prompt)
+        confidence = extract_confidence_score(recommendation)
+
+        if confidence is None or confidence < CONFIDENCE_THRESHOLD:
+            continue  # skip low-confidence picks
+
+        send_to_discord(recommendation)
+        log_feedback(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signal['game'], recommendation, confidence)
 
 if __name__ == "__main__":
-    print("⚙️ Polling OpenAI for insights...")
-    raw_output = get_openai_recommendations()
-    append_to_sheet(raw_output)
-    print("✅ Dispatch sent.")
-
+    main()
