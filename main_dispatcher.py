@@ -17,8 +17,7 @@ CONFIDENCE_THRESHOLD = 7.0
 openai.api_key = OPENAI_API_KEY
 
 def build_gpt_prompt(signal):
-    return f""""
-Game: {signal['game']}
+    return f"""Game: {signal['game']}
 Line Move: {signal['line']}
 Public Handle: {signal['handle']}
 Sharp Sentiment: {signal['sentiment']}
@@ -27,7 +26,7 @@ Weather: {signal['weather']}
 Matchup Mismatch: {signal['matchup']}
 Composite Score: {signal['composite_score']}
 [bankroll=${BANKROLL}]
-""""
+"""
 
 def get_openai_recommendation(context):
     response = openai.ChatCompletion.create(
