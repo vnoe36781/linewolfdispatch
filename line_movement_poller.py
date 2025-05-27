@@ -1,72 +1,70 @@
 
 import requests
 import json
-import time
-from datetime import datetime
+import datetime
+import pytz
 
-ODDS_API_KEY = "96c5b309c0dd26637015b8772f450abf"
-SPORT = "americanfootball_nfl"
+WEBHOOK_URL = "your-discord-webhook-url"
+API_KEY = "96c5b309c0dd26637015b8772f450abf"
+SPORTS = ["americanfootball_nfl", "basketball_nba", "baseball_mlb", "americanfootball_ncaaf", "basketball_ncaab"]
 REGIONS = "us"
 MARKETS = "spreads"
-BOOK_NAME = "FanDuel"
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1376076095627071618/gpOqarzq4rNt1zI5OgTu1Jf-27-aAra5d8AD7QXY6O4jOLQtWxt-R5y_aqiiVoUkcozH"
 
-ODDS_API_URL = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
-
-last_seen_lines = {}
-
-def fetch_current_odds():
+def fetch_odds(sport):
+    url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
     params = {
-        "apiKey": ODDS_API_KEY,
+        "apiKey": API_KEY,
         "regions": REGIONS,
         "markets": MARKETS,
         "oddsFormat": "american"
     }
-    response = requests.get(ODDS_API_URL, params=params)
-    if response.status_code != 200:
-        print(f"Error: {response.status_code}")
-        return []
-    return response.json()
+    response = requests.get(url, params=params)
+    return response.json() if response.status_code == 200 else []
 
-def detect_line_moves():
-    global last_seen_lines
-    games = fetch_current_odds()
-    if not games:
-        return
+def post_to_discord(message):
+    payload = {
+        "content": f"**Line Movement Detected**\n{message}"
+    }
+    headers = {"Content-Type": "application/json"}
+    requests.post(WEBHOOK_URL, data=json.dumps(payload), headers=headers)
 
-    for game in games:
-        game_name = f"{game.get('teams', ['?','?'])[0]} vs {game.get('teams', ['?','?'])[1]}"
-        bookmakers = game.get("bookmakers", [])
-        book = next((b for b in bookmakers if b["title"] == BOOK_NAME), None)
-        if not book:
-            continue
+def detect_line_movements():
+    eastern = pytz.timezone("US/Eastern")
+    now = datetime.datetime.now(eastern).strftime("%I:%M %p EST")
 
-        market = next((m for m in book["markets"] if m["key"] == "spreads"), None)
-        if not market:
-            continue
+    for sport in SPORTS:
+        games = fetch_odds(sport)
+        for game in games:
+            teams = game.get("teams", [])
+            if len(teams) != 2:
+                continue  # Skip malformed or future markets without opponent
 
-        for outcome in market["outcomes"]:
-            team = outcome["name"]
-            current_point = outcome["point"]
-            game_key = f"{game_name}_{team}"
-            previous_point = last_seen_lines.get(game_key)
+            home_team = game.get("home_team")
+            away_team = [team for team in teams if team != home_team][0]
 
-            if previous_point is not None and abs(current_point - previous_point) >= 1.0:
-                send_alert(game_name, team, previous_point, current_point)
+            bookmakers = game.get("bookmakers", [])
+            for book in bookmakers:
+                book_name = book.get("title")
+                for market in book.get("markets", []):
+                    if market.get("key") != "spreads":
+                        continue
+                    outcomes = market.get("outcomes", [])
+                    if len(outcomes) != 2:
+                        continue
+                    line1 = outcomes[0]["point"]
+                    line2 = outcomes[1]["point"]
+                    delta = abs(line1 - line2)
+                    if delta >= 1.0:
+                        message = (
+                            f"- Game: {away_team} vs {home_team}\n"
+                            f"- Line Moved: {outcomes[0]['name']} {line1} → {line2}\n"
+                            f"- Book: {book_name}\n"
+                            f"- Time: {now}"
+                        )
+                        post_to_discord(message)
 
-            last_seen_lines[game_key] = current_point
-
-def send_alert(game, team, old_line, new_line):
-    now = datetime.now().strftime("%I:%M %p EST")
-    content = (
-        "**Line Movement Detected**\n"
-        f"- Game: {game}\n"
-        f"- Team: {team}\n"
-        f"- Line Moved: {old_line} -> {new_line}\n"
-        f"- Book: {BOOK_NAME}\n"
-        f"- Time: {now}"
-    )
-    requests.post(DISCORD_WEBHOOK_URL, json={"content": content})
+if __name__ == "__main__":
+    detect_line_movements()
 
 if __name__ == "__main__":
     detect_line_moves()
