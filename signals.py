@@ -3,7 +3,7 @@ from odds_API import get_all_current_odds
 from weather import get_weather_score
 from injuries import get_injury_score
 from sentiment import get_sentiment_score
-from matchup import get_matchup_score
+from matchup_model import get_matchup_score
 from pace import get_pace_score
 from fatigue import get_fatigue_score
 from promos import get_promo_score
