@@ -20,18 +20,21 @@ def fetch_odds_for_sport(sport_key):
         "markets": "spreads,totals",
         "oddsFormat": "american"
     }
-    response = requests.get(url, params=params)
-
-    if response.status_code != 200:
-        print(f"[{time.time()}] Error fetching odds for {sport_key}: {response.status_code}")
-        return []
 
     try:
+        response = requests.get(url, params=params)
+        if response.status_code == 422:
+            print(f"[{time.time()}] No data available (422) for {sport_key} — likely offseason or invalid market.")
+            return []
+        elif response.status_code != 200:
+            print(f"[{time.time()}] Error fetching odds for {sport_key}: {response.status_code}")
+            return []
+
         games = response.json()
-        # Filter out any games that are futures markets
         return [g for g in games if not g.get("key", "").endswith("_winner")]
+    
     except Exception as e:
-        print(f"[ERROR] Problem processing odds response: {e}")
+        print(f"[ERROR] Unexpected exception fetching odds for {sport_key}: {e}")
         return []
 
 def get_all_current_odds():
@@ -40,3 +43,4 @@ def get_all_current_odds():
         games = fetch_odds_for_sport(sport)
         all_games.extend(games)
     return all_games
+
