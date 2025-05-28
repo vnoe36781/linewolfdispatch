@@ -1,7 +1,7 @@
 import requests
 
 # CONFIG
-OWM_API_KEY = "4fa20ed06da34783779674e788464386 "
+OWM_API_KEY = os.getenv("WEATHER_API_KEY")
 WEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 def get_weather_score(lat, lon, sport_type):
