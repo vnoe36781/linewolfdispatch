@@ -1,6 +1,6 @@
 import os
 from odds_API import get_all_us_odds
-from weather import get_weather_context
+from weather import get_weather_score
 from injuries import get_injury_report
 from sentiment import get_sentiment_for_team
 
@@ -23,7 +23,7 @@ def get_all_composite_signals():
             injuries_home = get_injury_report(home)
             injuries_away = get_injury_report(away)
 
-            weather_context = get_weather_context(kickoff, home)
+            weather_context = get_weather_score(kickoff, home)
 
             signal = {
                 "game": f"{home} vs {away}",
