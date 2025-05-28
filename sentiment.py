@@ -58,7 +58,7 @@ def analyze_sentiment_from_texts(texts):
             score -= 1
     return score
 
-def get_sentiment_for_team(team_name):
+def get_sentiment_score(team_name):
     reddit_score = fetch_reddit_sentiment(team_name)
     twitter_score = fetch_twitter_sentiment(team_name)
     combined = reddit_score + twitter_score
