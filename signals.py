@@ -3,11 +3,12 @@ from odds_API import get_all_current_odds
 from weather import get_weather_score
 from injuries import get_injury_score
 from sentiment import get_sentiment_score
-from matchup_model import get_matchup_score
-from pace_module import get_pace_score
+from matchup import get_matchup_score
+from pace import get_pace_score
 from fatigue import get_fatigue_score
 from promos import get_promo_score
 from sharp_sentiment import get_sharp_sentiment_score
+from team_locations import TEAM_COORDS
 
 SPORT_SCALING = {
     "americanfootball_nfl": {"weather": 1.0, "injuries": 1.0, "sentiment": 0.9, "matchup": 1.0, "pace": 0.5, "fatigue": 0.7, "promo": 0.6, "sharp": 1.0},
@@ -24,9 +25,15 @@ def get_all_composite_signals():
     for game in games:
         try:
             sport = game.get("sport_key", "unknown")
+            home = game.get("home_team", "")
+            away = game.get("away_team", "")
             weights = SPORT_SCALING.get(sport, {})
 
-            weather = get_weather_score(game, sport) * weights.get("weather", 1.0)
+            lat, lon = TEAM_COORDS.get(home, (None, None))
+            if lat is None or lon is None:
+                raise ValueError(f"Missing coordinates for {home}")
+
+            weather = get_weather_score(lat, lon, sport) * weights.get("weather", 1.0)
             injuries = get_injury_score(game) * weights.get("injuries", 1.0)
             sentiment = get_sentiment_score(game) * weights.get("sentiment", 1.0)
             matchup = get_matchup_score(game) * weights.get("matchup", 1.0)
@@ -38,7 +45,7 @@ def get_all_composite_signals():
             composite = round((weather + injuries + sentiment + matchup + pace + fatigue + promo + sharp), 2)
 
             signals.append({
-                "game": f"{game.get('home_team')} vs {game.get('away_team')}",
+                "game": f"{home} vs {away}",
                 "line": game.get("bookmakers", [{}])[0].get("markets", [{}])[0].get("outcomes", [{}])[0].get("point", "N/A"),
                 "handle": game.get("bookmakers", [{}])[0].get("markets", [{}])[0].get("outcomes", [{}])[0].get("price", "N/A"),
                 "weather": round(weather, 2),
