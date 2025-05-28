@@ -1,53 +1,48 @@
-import requests
-import json
-from weather import get_weather_data
-from injuries import get_injury_data
-from sentiment import get_combined_sentiment
-from matchup_model import get_matchup_score
-from utils import get_sport_type
+import os
+from odds_API import get_all_us_odds
+from weather import get_weather_context
+from injuries import get_injury_report
+from sentiment import get_sentiment_for_team
 
-# CONFIG
-SPORT_WEIGHTS = {
-    'NFL': {'weather': 0.25, 'injuries': 0.25, 'sentiment': 0.15, 'matchup': 0.35},
-    'NCAAF': {'weather': 0.2, 'injuries': 0.25, 'sentiment': 0.15, 'matchup': 0.4},
-    'NBA': {'weather': 0.05, 'injuries': 0.2, 'sentiment': 0.2, 'matchup': 0.55},
-    'NCAAM': {'weather': 0.05, 'injuries': 0.2, 'sentiment': 0.15, 'matchup': 0.6},
-    'MLB': {'weather': 0.15, 'injuries': 0.15, 'sentiment': 0.2, 'matchup': 0.5},
-}
+# Optional: Future imports (pace, fatigue, refs, promos) for enrichment scaffolding
 
 def get_all_composite_signals():
-    response = requests.get("https://api.the-odds-api.com/v4/sports/?apiKey=your-key")
-    games = response.json()
+    games = get_all_us_odds()
+    signals = []
 
-    signal_data = []
     for game in games:
-        sport = get_sport_type(game)
-        teams = game.get('teams', [])
-        team1, team2 = teams if len(teams) == 2 else ("Unknown", "Unknown")
+        try:
+            home = game.get("home_team", "")
+            away = game.get("away_team", "")
+            kickoff = game.get("commence_time", "")
+            line_data = game.get("bookmakers", [{}])[0].get("markets", [{}])[0].get("outcomes", [{}])
 
-        weather = get_weather_data(game)
-        injuries = get_injury_data(game)
-        sentiment = get_combined_sentiment(team1, team2)
-        matchup = get_matchup_score(game)
+            sentiment_home = get_sentiment_for_team(home)
+            sentiment_away = get_sentiment_for_team(away)
 
-        weights = SPORT_WEIGHTS.get(sport, SPORT_WEIGHTS['NFL'])
-        composite = (
-            weights['weather'] * weather.get('score', 0) +
-            weights['injuries'] * injuries.get('score', 0) +
-            weights['sentiment'] * sentiment.get('score', 0) +
-            weights['matchup'] * matchup.get('score', 0)
-        )
+            injuries_home = get_injury_report(home)
+            injuries_away = get_injury_report(away)
 
-        signal_data.append({
-            'game': f"{team1} vs {team2}",
-            'line': game.get('bookmakers', [{}])[0].get('markets', [{}])[0].get('outcomes', [{}])[0].get('point', 'N/A'),
-            'handle': game.get('handle', 'N/A'),
-            'sentiment': sentiment.get('summary', 'N/A'),
-            'injuries': injuries.get('summary', 'N/A'),
-            'weather': weather.get('summary', 'N/A'),
-            'matchup': matchup.get('summary', 'N/A'),
-            'composite_score': round(composite, 2)
-        })
+            weather_context = get_weather_context(kickoff, home)
+
+            signal = {
+                "game": f"{home} vs {away}",
+                "line": line_data.get("point", "N/A"),
+                "handle": line_data.get("price", "N/A"),
+                "sentiment": f"{home}: {sentiment_home} / {away}: {sentiment_away}",
+                "injuries": f"{home}: {injuries_home} / {away}: {injuries_away}",
+                "weather": weather_context,
+                "matchup": "Pending DVOA model deployment",
+                "composite_score": 0  # Will be replaced by GPT evaluation
+            }
+
+            signals.append(signal)
+
+        except Exception as e:
+            print(f"[ERROR] Problem processing game: {e}")
+
+    return signals
+
 
     return signal_data
 
