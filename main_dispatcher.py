@@ -9,7 +9,7 @@ from signals import get_all_composite_signals
 
 # CONFIG
 OPENAI_API_KEY = "your-openai-api-key"
-DISCORD_WEBHOOK_URL = "your-discord-webhook-url"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1375652751324876800/LDKEh-tCIcPvQKsbnBEi-4pfK5SllCiCjqk54IvyfwULlNdeFG73d_5iwiDfuUfb7Ti3"
 BANKROLL = 20000
 FEEDBACK_FILE = "feedback_tracker.csv"
 CONFIDENCE_THRESHOLD = 7.0
