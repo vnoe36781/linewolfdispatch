@@ -1,7 +1,7 @@
 import requests
 
 # CONFIG
-SLEEPER_INJURY_URL = "https://api.sleeper.app/v1/players/injuries"
+SLEEPER_INJURY_URL = os.getenv("SLEEPER_API_KEY")
 
 # Sample positional weights (can be adjusted per sport)
 POSITION_WEIGHTS = {
