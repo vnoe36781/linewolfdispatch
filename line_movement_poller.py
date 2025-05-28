@@ -67,4 +67,4 @@ if __name__ == "__main__":
     detect_line_movements()
 
 if __name__ == "__main__":
-    detect_line_moves()
+    detect_line_movements()
