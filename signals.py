@@ -4,7 +4,7 @@ from weather import get_weather_score
 from injuries import get_injury_score
 from sentiment import get_sentiment_score
 from matchup_model import get_matchup_score
-from pace import get_pace_score
+from pace_module import get_pace_score
 from fatigue import get_fatigue_score
 from promos import get_promo_score
 from sharp_sentiment import get_sharp_sentiment_score
