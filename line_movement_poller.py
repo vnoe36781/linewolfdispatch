@@ -4,7 +4,7 @@ import json
 import datetime
 import pytz
 
-WEBHOOK_URL = "your-discord-webhook-url"
+WEBHOOK_URL = "https://discord.com/api/webhooks/1376076095627071618/gpOqarzq4rNt1zI5OgTu1Jf-27-aAra5d8AD7QXY6O4jOLQtWxt-R5y_aqiiVoUkcozH"
 API_KEY = "96c5b309c0dd26637015b8772f450abf"
 SPORTS = ["americanfootball_nfl", "basketball_nba", "baseball_mlb", "americanfootball_ncaaf", "basketball_ncaab"]
 REGIONS = "us"
