@@ -24,3 +24,6 @@ def get_team_pace(team_name):
     except Exception as e:
         print(f"[ERROR] Pace data fetch failed: {e}")
         return {"pace": "N/A", "rank": "N/A"}
+def get_pace_score(game):
+    # actual logic goes here
+    return some_float
