@@ -1,79 +1,54 @@
-
 import requests
-import re
-import random
+import json
+import time
 
-# Reddit config
-REDDIT_SUBS = [
-    "sportsbook", "gambling",
-    "nfl", "nba", "cfb", "ncaab",
-    "bills", "chiefs", "cowboys", "49ers", "lakers"
+# CONFIGURATION
+TWITTER_HANDLES = [
+    "RightAngleSports", "Hitman428", "JoeyKnish22", "Clevta", "TheSharpPlays",
+    "whale_capper", "SportsCheetah", "BetsStats", "VSiNLive", "Covers"
 ]
-REDDIT_ENDPOINT = "https://www.reddit.com/r/{sub}/top/.json?limit=10&t=day"
-USER_AGENT = {"User-Agent": "LineWolfSentimentBot"}
+REDDIT_SENTIMENT_API = "https://your-reddit-sentiment-endpoint.com"
+TWITTER_SCRAPE_ENDPOINT = "https://your-twitter-scrape-endpoint.com"
 
-# Twitter config (structure only — credentials injected securely)
-TWITTER_SHARP_USERS = [
-    "Covers", "TheSharpPlays", "RightAngleSports", "WagerTalk", "BettingPros"
-]
+def fetch_reddit_sentiment(team):
+    try:
+        response = requests.get(REDDIT_SENTIMENT_API, params={"team": team})
+        data = response.json()
+        return data.get("score", 0), data.get("summary", "No Reddit sentiment found.")
+    except:
+        return 0, "Reddit data unavailable"
 
-SHARP_KEYWORDS = ["lock", "value", "trap", "steam", "tail", "fade", "sharp", "max bet", "free play"]
+def fetch_twitter_sentiment(team):
+    try:
+        response = requests.post(TWITTER_SCRAPE_ENDPOINT, json={
+            "team": team,
+            "handles": TWITTER_HANDLES
+        }, timeout=10)
+        data = response.json()
+        return data.get("score", 0), data.get("summary", "No Twitter sentiment found.")
+    except:
+        return 0, "Twitter data unavailable"
 
-def score_sentiment(text_block):
-    hits = [kw for kw in SHARP_KEYWORDS if kw in text_block.lower()]
-    return len(hits)
+def get_combined_sentiment(team1, team2):
+    t1_reddit_score, t1_reddit_text = fetch_reddit_sentiment(team1)
+    t2_reddit_score, t2_reddit_text = fetch_reddit_sentiment(team2)
 
-def pull_reddit_sentiment():
-    all_comments = []
-    for sub in REDDIT_SUBS:
-        try:
-            url = REDDIT_ENDPOINT.format(sub=sub)
-            r = requests.get(url, headers=USER_AGENT)
-            if r.status_code != 200:
-                continue
-            posts = r.json().get("data", {}).get("children", [])
-            for post in posts:
-                title = post["data"].get("title", "")
-                comments = post["data"].get("selftext", "")
-                combined = title + " " + comments
-                if any(kw in combined.lower() for kw in SHARP_KEYWORDS):
-                    all_comments.append(combined)
-        except:
-            continue
-    return all_comments
+    t1_twitter_score, t1_twitter_text = fetch_twitter_sentiment(team1)
+    t2_twitter_score, t2_twitter_text = fetch_twitter_sentiment(team2)
 
-def summarize_sentiment(text_list, team_keywords):
-    team_scores = {}
-    for team in team_keywords:
-        score = 0
-        for comment in text_list:
-            if team.lower() in comment.lower():
-                score += score_sentiment(comment)
-        if score > 0:
-            team_scores[team] = score
-    return team_scores
+    avg_score = round((t1_reddit_score + t2_reddit_score + t1_twitter_score + t2_twitter_score) / 4, 2)
+    combined_summary = f"""
+**{team1}**:
+- Reddit: {t1_reddit_text}
+- Twitter: {t1_twitter_text}
 
-def get_sentiment_for_game(game_name):
-    teams = [t.strip() for t in re.split("vs|VS|Vs", game_name)]
-    if len(teams) != 2:
-        return "Unknown teams, skipping sentiment"
+**{team2}**:
+- Reddit: {t2_reddit_text}
+- Twitter: {t2_twitter_text}
+    """.strip()
 
-    reddit_comments = pull_reddit_sentiment()
-    team_scores = summarize_sentiment(reddit_comments, teams)
+    return {
+        "score": avg_score,
+        "summary": combined_summary
+    }
 
-    if not team_scores:
-        return "No clear sentiment trend"
-
-    best = sorted(team_scores.items(), key=lambda x: x[1], reverse=True)
-    desc = []
-    for team, score in best:
-        label = "steam" if score >= 3 else "light steam"
-        desc.append(f"{team}: {label} (score {score})")
-
-    return " | ".join(desc)
-
-def get_sentiment_batch(game_list):
-    sentiment_dict = {}
-    for game in game_list:
-        sentiment_dict[game] = get_sentiment_for_game(game)
-    return sentiment_dict
