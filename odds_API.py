@@ -1,33 +1,42 @@
-import requests
 import os
-from datetime import datetime
+import requests
+import time
 
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
-SPORTS_URL = "https://api.the-odds-api.com/v4/sports"
-ODDS_URL_TEMPLATE = "https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={key}&regions=us&markets=spreads,totals&oddsFormat=american"
 
-def get_sports():
-    response = requests.get(f"{SPORTS_URL}?apiKey={ODDS_API_KEY}")
-    return response.json()
+SPORTS = [
+    "americanfootball_nfl",
+    "americanfootball_ncaaf",
+    "baseball_mlb",
+    "basketball_nba",
+    "basketball_ncaab"
+]
 
-def get_odds_for_sport(sport_key):
-    url = ODDS_URL_TEMPLATE.format(sport=sport_key, key=ODDS_API_KEY)
-    response = requests.get(url)
+def fetch_odds_for_sport(sport_key):
+    url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds"
+    params = {
+        "apiKey": ODDS_API_KEY,
+        "regions": "us",
+        "markets": "spreads,totals",
+        "oddsFormat": "american"
+    }
+    response = requests.get(url, params=params)
+
     if response.status_code != 200:
-        print(f"[{datetime.now()}] Error fetching odds for {sport_key}: {response.status_code}")
+        print(f"[{time.time()}] Error fetching odds for {sport_key}: {response.status_code}")
         return []
-    return response.json()
 
-def get_all_us_odds():
-    sports = get_sports()
-    valid_sports = [s for s in sports if s.get("active") and s.get("key", "").startswith(("americanfootball", "basketball", "baseball"))]
+    try:
+        games = response.json()
+        # Filter out any games that are futures markets
+        return [g for g in games if not g.get("key", "").endswith("_winner")]
+    except Exception as e:
+        print(f"[ERROR] Problem processing odds response: {e}")
+        return []
 
-    all_odds = []
-    for sport in valid_sports:
-        sport_key = sport["key"]
-        sport_odds = get_odds_for_sport(sport_key)
-        for game in sport_odds:
-            game['sport_key'] = sport_key
-            all_odds.append(game)
-
-    return all_odds
+def get_all_current_odds():
+    all_games = []
+    for sport in SPORTS:
+        games = fetch_odds_for_sport(sport)
+        all_games.extend(games)
+    return all_games
