@@ -1,66 +1,79 @@
 import os
-from odds_API import get_all_current_odds
+from datetime import datetime
+from team_locations import get_team_coordinates
 from weather import get_weather_score
-from injuries import get_injury_score
+from pace import get_pace_score
 from sentiment import get_sentiment_score
-from matchup_model import get_matchup_score
-from pace_module import get_pace_score
 from fatigue import get_fatigue_score
-from promos import get_promo_score
-from sharp_sentiment import get_sharp_sentiment_score
-from team_locations import TEAM_COORDS
+from ref_trends import get_ref_score
+from promo_scraper import get_promo_score
 
-SPORT_SCALING = {
-    "americanfootball_nfl": {"weather": 1.0, "injuries": 1.0, "sentiment": 0.9, "matchup": 1.0, "pace": 0.5, "fatigue": 0.7, "promo": 0.6, "sharp": 1.0},
-    "americanfootball_ncaaf": {"weather": 0.9, "injuries": 0.8, "sentiment": 0.8, "matchup": 0.9, "pace": 0.5, "fatigue": 0.5, "promo": 0.5, "sharp": 1.0},
-    "basketball_nba": {"weather": 0.2, "injuries": 1.0, "sentiment": 1.0, "matchup": 1.0, "pace": 1.0, "fatigue": 1.0, "promo": 0.6, "sharp": 1.0},
-    "basketball_ncaab": {"weather": 0.2, "injuries": 0.8, "sentiment": 0.8, "matchup": 0.9, "pace": 0.8, "fatigue": 0.6, "promo": 0.5, "sharp": 1.0},
-    "baseball_mlb": {"weather": 1.0, "injuries": 0.7, "sentiment": 0.9, "matchup": 1.0, "pace": 0.9, "fatigue": 0.8, "promo": 0.5, "sharp": 1.0}
-}
+# Enable/disable modules with environment flags
+ENABLE_WEATHER = os.getenv("ENABLE_WEATHER", "true").lower() == "true"
+ENABLE_PACE = os.getenv("ENABLE_PACE", "true").lower() == "true"
+ENABLE_SENTIMENT = os.getenv("ENABLE_SENTIMENT", "true").lower() == "true"
+ENABLE_FATIGUE = os.getenv("ENABLE_FATIGUE", "true").lower() == "true"
+ENABLE_REFS = os.getenv("ENABLE_REFS", "true").lower() == "true"
+ENABLE_PROMOS = os.getenv("ENABLE_PROMOS", "true").lower() == "true"
 
-def get_all_composite_signals():
-    games = get_all_current_odds()
+def get_composite_score(game: dict) -> dict:
+    home = game["home_team"]
+    away = game["away_team"]
+    sport = game.get("sport", "nfl")
+
     signals = []
+    summary = []
 
-    for game in games:
-        try:
-            sport = game.get("sport_key", "unknown")
-            home = game.get("home_team", "")
-            away = game.get("away_team", "")
-            weights = SPORT_SCALING.get(sport, {})
+    # WEATHER
+    if ENABLE_WEATHER:
+        weather_result = get_weather_score(home, sport)
+        signals.append(weather_result["score"])
+        summary.append(f"🌤️ {weather_result['summary']}")
 
-            lat, lon = TEAM_COORDS.get(home, (None, None))
-            if lat is None or lon is None:
-                raise ValueError(f"Missing coordinates for {home}")
+    # PACE
+    if ENABLE_PACE:
+        pace_score = get_pace_score(home, away, sport)
+        signals.append(pace_score)
+        summary.append(f"⏱️ Pace Score: {pace_score:.2f}")
 
-            weather = get_weather_score(lat, lon, sport) * weights.get("weather", 1.0)
-            injuries = get_injury_score(game) * weights.get("injuries", 1.0)
-            sentiment = get_sentiment_score(game) * weights.get("sentiment", 1.0)
-            matchup = get_matchup_score(game) * weights.get("matchup", 1.0)
-            pace = get_pace_score(game) * weights.get("pace", 1.0)
-            fatigue = get_fatigue_score(game) * weights.get("fatigue", 1.0)
-            promo = get_promo_score(game) * weights.get("promo", 1.0)
-            sharp = get_sharp_sentiment_score(game) * weights.get("sharp", 1.0)
+    # SENTIMENT
+    if ENABLE_SENTIMENT:
+        sentiment_score = get_sentiment_score(home, away)
+        signals.append(sentiment_score)
+        summary.append(f"📈 Sentiment Score: {sentiment_score:.2f}")
 
-            composite = round((weather + injuries + sentiment + matchup + pace + fatigue + promo + sharp), 2)
+    # FATIGUE
+    if ENABLE_FATIGUE:
+        fatigue_score = get_fatigue_score(home, away)
+        signals.append(fatigue_score)
+        summary.append(f"😴 Fatigue Score: {fatigue_score:.2f}")
 
-            signals.append({
-                "game": f"{home} vs {away}",
-                "line": game.get("bookmakers", [{}])[0].get("markets", [{}])[0].get("outcomes", [{}])[0].get("point", "N/A"),
-                "handle": game.get("bookmakers", [{}])[0].get("markets", [{}])[0].get("outcomes", [{}])[0].get("price", "N/A"),
-                "weather": round(weather, 2),
-                "injuries": round(injuries, 2),
-                "sentiment": round(sentiment, 2),
-                "matchup": round(matchup, 2),
-                "pace": round(pace, 2),
-                "fatigue": round(fatigue, 2),
-                "promo": round(promo, 2),
-                "sharp": round(sharp, 2),
-                "composite_score": composite,
-                "sport_key": sport
-            })
-        except Exception as e:
-            print(f"[ERROR] Problem processing game: {e}")
-            continue
+    # REFEREE TRENDS
+    if ENABLE_REFS:
+        ref_score = get_ref_score(game)
+        signals.append(ref_score)
+        summary.append(f"🧑‍⚖️ Ref Score: {ref_score:.2f}")
 
-    return signals
+    # PROMOTIONS / PUBLIC INCENTIVES
+    if ENABLE_PROMOS:
+        promo_score = get_promo_score(game)
+        signals.append(promo_score)
+        summary.append(f"💰 Promo Influence: {promo_score:.2f}")
+
+    # FALLBACK if no signals loaded
+    if not signals:
+        signals = [5.0]
+        summary.append("⚠️ No signal modules enabled.")
+
+    avg_score = round(sum(signals) / len(signals), 2)
+    return {
+        "home_team": home,
+        "away_team": away,
+        "avg_score": avg_score,
+        "signal_breakdown": "; ".join(summary),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+def get_all_composite_signals(games: list[dict]) -> list[dict]:
+    return [get_composite_score(game) for game in games]
+
