@@ -1,11 +1,19 @@
 import os
 import requests
+from team_locations import get_team_coordinates
 
 # CONFIG
 OWM_API_KEY = os.getenv("WEATHER_API_KEY")
 WEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
-def get_weather_score(lat, lon, sport_type):
+def get_weather_score(team_name: str, sport_type: str):
+    coords = get_team_coordinates(team_name)
+    
+    if not coords:
+        return {"score": 5.0, "summary": f"No coordinates found for {team_name}."}
+
+    lat, lon = coords
+
     try:
         params = {
             "lat": lat,
@@ -62,4 +70,8 @@ def get_weather_score(lat, lon, sport_type):
         }
 
     except Exception as e:
-        return {"score": 5.0, "summary": f"Weather fetch error: {str(e)}"}
+        return {"score": 5.0, "summary": f"Weather error: {str(e)}"}
+
+if __name__ == "__main__":
+    test = get_weather_score("Florida State", "nfl")
+    print(test)
