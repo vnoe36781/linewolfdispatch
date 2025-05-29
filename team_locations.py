@@ -1,9 +1,12 @@
 # team_locations.py
 
 import os
+# Pro Leagues
 from nfl_coords import NFL_COORDS
 from nba_coords import NBA_COORDS
 from mlb_coords import MLB_COORDS
+
+#College Leagues
 from fbs_coords import FBS_COORDS
 from fcs_coords import FCS_COORDS
 from d2_coords import DII_COORDS
@@ -117,5 +120,4 @@ if __name__ == "__main__":
     for team in test_teams:
         coords = get_team_coordinates(team)
         print(f"{team} → {coords if coords else 'Not found'}")
-    "NCAAB": NCAA_BASKETBALL_COORDS,
-}
+
