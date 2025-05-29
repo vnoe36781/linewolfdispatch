@@ -39,7 +39,9 @@ def evaluate_mismatch(team1, team2, injury_context=None):
         "score": round(min(max(score, 1), 10), 2),
         "summary": summary
     }
-def get_matchup_score(game):
+def get_matchup_score(home_team: str, away_team: str, sport: str) -> float:
+    # Placeholder logic until implemented
+    return 0.0
     team1 = game.get("home_team")
     team2 = game.get("away_team")
 
