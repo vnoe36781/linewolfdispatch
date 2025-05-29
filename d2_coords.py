@@ -1,4 +1,4 @@
-d2_COORDS = {
+dII_COORDS = {
   'Alabama A&M': (34.7829, -86.5681), 
   'Alabama State': (32.3625, -86.294), 
   'Albany': (42.6864, -73.8239), 
