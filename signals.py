@@ -2,7 +2,7 @@ import os
 from weather import get_weather_score
 from team_locations import get_team_coordinates
 from matchup_model import get_matchup_score
-from sentiment import sentiment_score
+from sentiment import get_sentiment_score
 from pace import get_pace_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
