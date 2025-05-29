@@ -1,11 +1,26 @@
 import os
 from weather import get_weather_score
 from team_locations import get_team_coordinates
-from matchup_model import get_matchup_score
+from matchup import get_matchup_score
 from sentiment import get_sentiment_score
 from pace import get_pace_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
+
+# Indoor game exclusions
+INDOOR_SPORTS = {"nba", "ncaab"}
+DOME_TEAMS = {
+    "New Orleans Saints",
+    "Atlanta Falcons",
+    "Detroit Lions",
+    "Minnesota Vikings",
+    "Indianapolis Colts",
+    "Las Vegas Raiders",
+    "Los Angeles Rams",
+    "Arizona Cardinals",
+    "Dallas Cowboys",
+    "Houston Texans"
+}
 
 # Main Composite Signal Function
 def get_all_composite_signals(games):
@@ -22,9 +37,13 @@ def get_all_composite_signals(games):
         if not home_coords or not away_coords:
             continue
 
-        # Weather Scores
-        weather_home = get_weather_score(*home_coords, sport)
-        weather_away = get_weather_score(*away_coords, sport)
+        # Weather Scores (suppressed for indoor games)
+        if sport.lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
+            weather_home = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
+            weather_away = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
+        else:
+            weather_home = get_weather_score(*home_coords, sport)
+            weather_away = get_weather_score(*away_coords, sport)
 
         # Sentiment
         sentiment_home = get_sentiment_score(home)
