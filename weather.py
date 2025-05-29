@@ -7,10 +7,6 @@ OWM_API_KEY = os.getenv("WEATHER_API_KEY")
 WEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 def get_weather_score(lat: float, lon: float, sport_type: str):
-    coords = get_team_coordinates(team_name)
-    
-    if not coords:
-        return {"score": 5.0, "summary": f"No coordinates found for {team_name}."}
 
     lat, lon = coords
 
