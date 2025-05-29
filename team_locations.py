@@ -9,7 +9,7 @@ from mlb_coords import MLB_COORDS
 #College Leagues
 from fbs_coords import FBS_COORDS
 from fcs_coords import FCS_COORDS
-from d2_coords import DII_COORDS
+from d2_coords import dII_COORDS
 from ncaa_basketball_coords import NCAA_BASKETBALL_COORDS
 
 # Combined base dictionary
