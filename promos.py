@@ -1,3 +1,3 @@
-def get_promo_score(game):
-    # your actual logic here
-    return some_number
+def get_promo_score(home_team, away_team, sport):
+    return 0.0  # Placeholder
+
