@@ -8,8 +8,6 @@ WEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 def get_weather_score(lat: float, lon: float, sport_type: str):
 
-    lat, lon = coords
-
     try:
         params = {
             "lat": lat,
