@@ -1,79 +1,88 @@
 import os
-from datetime import datetime
-from team_locations import get_team_coordinates
 from weather import get_weather_score
+from team_locations import get_team_coordinates
+from matchup import get_matchup_score
+from sentiment import get_sentiment_for_team
 from pace import get_pace_score
-from sentiment import get_sentiment_score
-from fatigue import get_fatigue_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
 
-# Enable/disable modules with environment flags
-ENABLE_WEATHER = os.getenv("ENABLE_WEATHER", "true").lower() == "true"
-ENABLE_PACE = os.getenv("ENABLE_PACE", "true").lower() == "true"
-ENABLE_SENTIMENT = os.getenv("ENABLE_SENTIMENT", "true").lower() == "true"
-ENABLE_FATIGUE = os.getenv("ENABLE_FATIGUE", "true").lower() == "true"
-ENABLE_REFS = os.getenv("ENABLE_REFS", "true").lower() == "true"
-ENABLE_PROMOS = os.getenv("ENABLE_PROMOS", "true").lower() == "true"
-
-def get_composite_score(game: dict) -> dict:
-    home = game["home_team"]
-    away = game["away_team"]
-    sport = game.get("sport", "nfl")
-
+# Main Composite Signal Function
+def get_all_composite_signals(games):
     signals = []
-    summary = []
+    for game in games:
+        home = game.get("home_team")
+        away = game.get("away_team")
+        sport = game.get("sport")
 
-    # WEATHER
-    if ENABLE_WEATHER:
-        weather_result = get_weather_score(home, sport)
-        signals.append(weather_result["score"])
-        summary.append(f"🌤️ {weather_result['summary']}")
+        home_coords = get_team_coordinates(home)
+        away_coords = get_team_coordinates(away)
 
-    # PACE
-    if ENABLE_PACE:
+        # Skip games with missing coordinates
+        if not home_coords or not away_coords:
+            continue
+
+        # Weather Scores
+        weather_home = get_weather_score(*home_coords, sport)
+        weather_away = get_weather_score(*away_coords, sport)
+
+        # Sentiment
+        sentiment_home = get_sentiment_for_team(home)
+        sentiment_away = get_sentiment_for_team(away)
+
+        # Matchup
+        matchup_score = get_matchup_score(home, away, sport)
+
+        # Pace (placeholder penalty suppression)
         pace_score = get_pace_score(home, away, sport)
-        signals.append(pace_score)
-        summary.append(f"⏱️ Pace Score: {pace_score:.2f}")
+        pace_penalty = 0.0
+        if pace_score == 0.0:
+            pace_penalty = 0.0  # suppress until implemented
 
-    # SENTIMENT
-    if ENABLE_SENTIMENT:
-        sentiment_score = get_sentiment_score(home, away)
-        signals.append(sentiment_score)
-        summary.append(f"📈 Sentiment Score: {sentiment_score:.2f}")
+        # Ref Trends (placeholder penalty suppression)
+        ref_score = get_ref_score(home, away, sport)
+        ref_penalty = 0.0
+        if ref_score == 0.0:
+            ref_penalty = 0.0  # suppress until implemented
 
-    # FATIGUE
-    if ENABLE_FATIGUE:
-        fatigue_score = get_fatigue_score(home, away)
-        signals.append(fatigue_score)
-        summary.append(f"😴 Fatigue Score: {fatigue_score:.2f}")
+        # Promos (placeholder penalty suppression)
+        promo_score = get_promo_score(home, away, sport)
+        promo_penalty = 0.0
+        if promo_score == 0.0:
+            promo_penalty = 0.0  # suppress until implemented
 
-    # REFEREE TRENDS
-    if ENABLE_REFS:
-        ref_score = get_ref_score(game)
-        signals.append(ref_score)
-        summary.append(f"🧑‍⚖️ Ref Score: {ref_score:.2f}")
+        composite_score = (
+            matchup_score * 0.30 +
+            sentiment_home * 0.15 +
+            sentiment_away * 0.15 +
+            weather_home["score"] * 0.10 +
+            weather_away["score"] * 0.10 +
+            pace_score * 0.05 +
+            ref_score * 0.05 +
+            promo_score * 0.10
+        )
 
-    # PROMOTIONS / PUBLIC INCENTIVES
-    if ENABLE_PROMOS:
-        promo_score = get_promo_score(game)
-        signals.append(promo_score)
-        summary.append(f"💰 Promo Influence: {promo_score:.2f}")
+        # Apply temporary suppression penalties (currently zero)
+        composite_score -= pace_penalty
+        composite_score -= ref_penalty
+        composite_score -= promo_penalty
 
-    # FALLBACK if no signals loaded
-    if not signals:
-        signals = [5.0]
-        summary.append("⚠️ No signal modules enabled.")
+        signals.append({
+            "matchup": f"{away} at {home}",
+            "score": round(composite_score, 2),
+            "components": {
+                "matchup": matchup_score,
+                "sentiment_home": sentiment_home,
+                "sentiment_away": sentiment_away,
+                "weather_home": weather_home,
+                "weather_away": weather_away,
+                "pace": pace_score,
+                "ref": ref_score,
+                "promo": promo_score
+            }
+        })
+    return signals
 
-    avg_score = round(sum(signals) / len(signals), 2)
-    return {
-        "home_team": home,
-        "away_team": away,
-        "avg_score": avg_score,
-        "signal_breakdown": "; ".join(summary),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-def get_all_composite_signals(games: list[dict]) -> list[dict]:
-    return [get_composite_score(game) for game in games]
+# Note: Once pace.py, ref_trends.py, and promo_scraper.py are fully implemented,
+# remove suppression logic for zero-value scores.
 
