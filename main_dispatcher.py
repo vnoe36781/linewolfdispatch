@@ -89,3 +89,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+if __name__ == "__main__":
+    test_games = [
+        {"home_team": "Florida State", "away_team": "Miami FL", "sport": "ncaaf"},
+        {"home_team": "Georgia", "away_team": "Tennessee", "sport": "ncaaf"},
+        {"home_team": "Alabama", "away_team": "Auburn", "sport": "ncaaf"}
+    ]
+
+    results = get_all_composite_signals(test_games)
+    for r in results:
+        print(r)
