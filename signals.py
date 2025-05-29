@@ -2,7 +2,7 @@ import os
 from weather import get_weather_score
 from team_locations import get_team_coordinates
 from matchup_model import get_matchup_score
-from sentiment import get_sentiment_score
+from sentiment import get_sentiment_home
 from pace import get_pace_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
@@ -46,11 +46,11 @@ def get_all_composite_signals(games):
             weather_away = get_weather_score(*away_coords, sport)
 
         # Sentiment
-        sentiment_home = sentiment_score(home)
+        sentiment_home = sentiment_home(home)
         if not isinstance(sentiment_home, (int, float)):
             sentiment_home = 0.0
 
-        sentiment_away = sentiment_score(away)
+        sentiment_away = sentiment_home(away)
         if not isinstance(sentiment_away, (int, float)):
             sentiment_away = 0.0
 
