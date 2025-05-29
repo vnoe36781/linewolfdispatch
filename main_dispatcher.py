@@ -6,6 +6,7 @@ import time
 import csv
 from datetime import datetime
 from signals import get_all_composite_signals
+from team_locations import get_team_coordinates
 
 # CONFIG
 OPENAI_API_KEY = "your-openai-api-key"
