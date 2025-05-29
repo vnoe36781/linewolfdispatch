@@ -1,5 +1,3 @@
-# pace.py
+def get_ref_score(home_team, away_team, sport):
+    return 0.0  # Placeholder
 
-def get_ref_score(game):
-    # Placeholder until actual logic is built
-    return 0.0
