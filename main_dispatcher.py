@@ -5,6 +5,7 @@ import json
 import time
 import csv
 from datetime import datetime
+from signals import get_all_composite_signals
 test_games = [
     {
         "home_team": "Florida State",
