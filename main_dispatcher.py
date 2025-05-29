@@ -5,7 +5,20 @@ import json
 import time
 import csv
 from datetime import datetime
-from signals import get_all_composite_signals
+test_games = [
+    {
+        "home_team": "Florida State",
+        "away_team": "Miami FL",
+        "sport": "ncaaf"
+    },
+    {
+        "home_team": "Detroit Tigers",
+        "away_team": "Kansas City Royals",
+        "sport": "mlb"
+    }
+]
+
+signals = get_all_composite_signals(test_games)
 from team_locations import get_team_coordinates
 
 # CONFIG
