@@ -20,16 +20,24 @@ TWITTER_ACCOUNTS = [
 
 HEADERS_TWITTER = {"Authorization": f"Bearer {TWITTER_BEARER_TOKEN}"}
 
-def fetch_reddit_sentiment(team_name):
-    params = {
-        "q": f"{team_name} AND ({REDDIT_QUERY})",
-        "subreddit": "sportsbook+nfl+ncaaf+nba+ncaab+mlb",
-        "after": f"{int(time.time()) - REDDIT_LOOKBACK_HOURS * 3600}",
-        "size": 100
-    }
-    response = requests.get(REDDIT_BASE_URL, params=params)
-    comments = response.json().get("data", [])
-    return analyze_sentiment_from_texts([c.get("body", "") for c in comments])
+def fetch_reddit_sentiment(team_name: str) -> float:
+    try:
+        response = requests.get(f"https://api.pushshift.io/reddit/search/comment/?q={team_name}&size=100", timeout=10)
+        try:
+            data = response.json()
+        except Exception:
+            return 0.0  # Gracefully handle invalid JSON
+
+        comments = data.get("data", [])
+        if not comments:
+            return 0.0
+
+        # Placeholder for sentiment logic
+        return 0.5  # Neutral default until implemented
+
+    except requests.exceptions.RequestException:
+        return 0.0
+
 
 def fetch_twitter_sentiment(team_name):
     combined_score = 0
