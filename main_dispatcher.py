@@ -32,7 +32,7 @@ CONFIDENCE_THRESHOLD = 7.0
 openai.api_key = OPENAI_API_KEY
 
 def build_gpt_prompt(signal):
-    return f"""Game: {signal['game']}
+    return f"""Game: {signal['matchup']}
 Line Move: {signal['line']}
 Public Handle: {signal['handle']}
 Sharp Sentiment: {signal['sentiment']}
