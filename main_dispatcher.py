@@ -8,14 +8,13 @@ from datetime import datetime
 from signals import get_all_composite_signals
 from team_locations import get_team_coordinates
 
-# CONFIG (now fully environment-driven)
+# CONFIG
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 BANKROLL = 20000
 FEEDBACK_FILE = "feedback_tracker.csv"
-CONFIDENCE_THRESHOLD = 0.0
+CONFIDENCE_THRESHOLD = 5.0
 
-# Fail fast if missing env vars
 assert OPENAI_API_KEY, "❌ Missing or invalid OPENAI_API_KEY environment variable."
 assert DISCORD_WEBHOOK_URL, "❌ Missing or invalid DISCORD_WEBHOOK_URL environment variable."
 
@@ -75,12 +74,20 @@ def main():
         {"home_team": "Detroit Tigers", "away_team": "Kansas City Royals", "sport": "mlb"}
     ]
     signals = get_all_composite_signals(test_games)
+    print(f"[DEBUG] Retrieved {len(signals)} signals")
+    for s in signals:
+        print("[DEBUG] Signal contents:", s)
+
     for signal in signals:
         prompt = build_gpt_prompt(signal)
+        print("[DEBUG] Generated prompt:\n", prompt)
         recommendation = get_openai_recommendation(prompt)
+        print("[DEBUG] GPT Recommendation:", recommendation)
         confidence = extract_confidence_score(recommendation)
+        print(f"[DEBUG] Confidence score extracted: {confidence}")
 
         if confidence is None or confidence < CONFIDENCE_THRESHOLD:
+            print("[INFO] Skipping due to low confidence")
             continue
 
         send_to_discord(recommendation)
@@ -88,6 +95,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
     main()
 
