@@ -7,6 +7,7 @@ import csv
 from datetime import datetime
 from signals import get_all_composite_signals
 from team_locations import get_team_coordinates
+from odds_API import get_all_current_odds
 
 # CONFIG
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
@@ -74,14 +75,11 @@ def extract_confidence_score(text):
     except:
         return None
 
-
 def main():
-    from odds_API import get_all_current_odds
+    all_games = get_all_current_odds()
+    signals = get_all_composite_signals(all_games)
 
-all_games = get_all_current_odds()
-signals = get_all_composite_signals(all_games)
-
-print(f"[DEBUG] Retrieved {len(signals)} signals")
+    print(f"[DEBUG] Retrieved {len(signals)} signals")
     for s in signals:
         print("[DEBUG] Signal contents:", s)
 
@@ -103,6 +101,4 @@ print(f"[DEBUG] Retrieved {len(signals)} signals")
 if __name__ == "__main__":
     main()
 
-
-    main()
 
