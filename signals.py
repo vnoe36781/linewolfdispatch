@@ -29,6 +29,9 @@ def find_line_for_game(home, away, sport):
                                 return outcome.get("point")
     return None
 
+def safe_component(value, weight):
+    return value * weight if isinstance(value, (int, float)) and value > 0 else 0, weight if isinstance(value, (int, float)) and value > 0 else 0
+
 def get_all_composite_signals(games):
     signals = []
     for game in games:
@@ -40,7 +43,6 @@ def get_all_composite_signals(games):
 
         home_coords = get_team_coordinates(home)
         away_coords = get_team_coordinates(away)
-
         if not home_coords or not away_coords:
             print(f"[SKIP] Coordinates missing: {home} → {home_coords}, {away} → {away_coords}")
             continue
@@ -52,31 +54,33 @@ def get_all_composite_signals(games):
             weather_home = get_weather_score(*home_coords, sport)
             weather_away = get_weather_score(*away_coords, sport)
 
-        sentiment_home = get_sentiment_score(home)
-        if not isinstance(sentiment_home, (int, float)):
-            sentiment_home = 0.0
-
-        sentiment_away = get_sentiment_score(away)
-        if not isinstance(sentiment_away, (int, float)):
-            sentiment_away = 0.0
-
+        # Pull scores
         matchup_score = get_matchup_score(home, away, sport)
+        sentiment_home = get_sentiment_score(home)
+        sentiment_away = get_sentiment_score(away)
         pace_score = get_pace_score(home, away, sport)
         ref_score = get_ref_score(home, away, sport)
         promo_score = get_promo_score(home, away, sport)
 
-        composite_score = (
-            matchup_score * 0.30 +
-            sentiment_home * 0.15 +
-            sentiment_away * 0.15 +
-            weather_home["score"] * 0.10 +
-            weather_away["score"] * 0.10 +
-            pace_score * 0.05 +
-            ref_score * 0.05 +
-            promo_score * 0.10
-        )
+        # Weighted scoring w/ null suppression
+        score_total = 0
+        weight_total = 0
 
-        composite_score = round(composite_score, 2)
+        for val, weight in [
+            safe_component(matchup_score, 0.30),
+            safe_component(sentiment_home, 0.15),
+            safe_component(sentiment_away, 0.15),
+            safe_component(weather_home["score"], 0.10),
+            safe_component(weather_away["score"], 0.10),
+            safe_component(pace_score, 0.05),
+            safe_component(ref_score, 0.05),
+            safe_component(promo_score, 0.10)
+        ]:
+            score_total += val
+            weight_total += weight
+
+        composite_score = round(score_total / weight_total, 2) if weight_total > 0 else 0.0
+
         signal = {
             "matchup": f"{away} at {home}",
             "composite_score": composite_score,
@@ -102,7 +106,6 @@ def get_all_composite_signals(games):
         signals.append(signal)
 
     return signals
-
 
 # Note: Once pace.py, ref_trends.py, and promo_scraper.py are fully implemented,
 # remove suppression logic for zero-value scores.
