@@ -1,3 +1,4 @@
+import os
 import requests
 import openai
 import json
@@ -8,8 +9,8 @@ from signals import get_all_composite_signals
 from team_locations import get_team_coordinates
 
 # CONFIG
-OPENAI_API_KEY = "your-openai-api-key"
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1375652751324876800/LDKEh-tCIcPvQKsbnBEi-4pfK5SllCiCjqk54IvyfwULlNdeFG73d_5iwiDfuUfb7Ti3"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 BANKROLL = 20000
 FEEDBACK_FILE = "feedback_tracker.csv"
 CONFIDENCE_THRESHOLD = 7.0
