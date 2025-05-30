@@ -76,11 +76,11 @@ def extract_confidence_score(text):
 
 
 def main():
-test_games = [
-    {"home_team": "Georgia", "away_team": "Tennessee", "sport": "ncaaf"},
-    {"home_team": "Alabama", "away_team": "Auburn", "sport": "ncaaf"}
-]
-    signals = get_all_composite_signals(test_games)
+from odds_API import get_all_current_odds
+
+all_games = get_all_current_odds()
+signals = get_all_composite_signals(all_games)
+
     print(f"[DEBUG] Retrieved {len(signals)} signals")
     for s in signals:
         print("[DEBUG] Signal contents:", s)
