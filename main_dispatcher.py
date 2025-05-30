@@ -81,7 +81,7 @@ def main():
 all_games = get_all_current_odds()
 signals = get_all_composite_signals(all_games)
 
-    print(f"[DEBUG] Retrieved {len(signals)} signals")
+print(f"[DEBUG] Retrieved {len(signals)} signals")
     for s in signals:
         print("[DEBUG] Signal contents:", s)
 
