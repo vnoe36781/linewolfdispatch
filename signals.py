@@ -50,7 +50,7 @@ def get_all_composite_signals(games):
         if not isinstance(sentiment_home, (int, float)):
             sentiment_home = 0.0
 
-        sentiment_away = sentiment_home_score(away)
+        sentiment_away = sentiment_home(away)
         if not isinstance(sentiment_away, (int, float)):
             sentiment_away = 0.0
 
