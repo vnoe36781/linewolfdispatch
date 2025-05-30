@@ -8,12 +8,16 @@ from datetime import datetime
 from signals import get_all_composite_signals
 from team_locations import get_team_coordinates
 
-# CONFIG
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+# CONFIG (now fully environment-driven)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 BANKROLL = 20000
 FEEDBACK_FILE = "feedback_tracker.csv"
 CONFIDENCE_THRESHOLD = 7.0
+
+# Fail fast if missing env vars
+assert OPENAI_API_KEY, "❌ Missing or invalid OPENAI_API_KEY environment variable."
+assert DISCORD_WEBHOOK_URL, "❌ Missing or invalid DISCORD_WEBHOOK_URL environment variable."
 
 openai.api_key = OPENAI_API_KEY
 
@@ -83,5 +87,7 @@ def main():
         log_feedback(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signal.get('matchup', 'Unknown'), recommendation, confidence)
 
 if __name__ == "__main__":
+    main()
+
     main()
 
