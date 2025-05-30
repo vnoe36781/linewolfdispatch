@@ -1,4 +1,3 @@
-
 import requests
 import openai
 import json
@@ -6,20 +5,6 @@ import time
 import csv
 from datetime import datetime
 from signals import get_all_composite_signals
-test_games = [
-    {
-        "home_team": "Florida State",
-        "away_team": "Miami FL",
-        "sport": "ncaaf"
-    },
-    {
-        "home_team": "Detroit Tigers",
-        "away_team": "Kansas City Royals",
-        "sport": "mlb"
-    }
-]
-
-signals = get_all_composite_signals(test_games)
 from team_locations import get_team_coordinates
 
 # CONFIG
@@ -32,14 +17,19 @@ CONFIDENCE_THRESHOLD = 7.0
 openai.api_key = OPENAI_API_KEY
 
 def build_gpt_prompt(signal):
-    return f"""Game: {signal['matchup']}
-Line Move: {signal['line']}
-Public Handle: {signal['handle']}
-Sharp Sentiment: {signal['sentiment']}
-Injuries: {signal['injuries']}
-Weather: {signal['weather']}
-Matchup Mismatch: {signal['matchup']}
-Composite Score: {signal['composite_score']}
+    expected_keys = ['line', 'handle', 'sentiment', 'injuries', 'weather', 'matchup', 'composite_score']
+    missing = [k for k in expected_keys if k not in signal]
+    if missing:
+        print(f"[WARN] Missing keys in signal: {missing}")
+
+    return f"""Game: {signal.get('matchup', 'N/A')}
+Line Move: {signal.get('line', 'N/A')}
+Public Handle: {signal.get('handle', 'N/A')}
+Sharp Sentiment: {signal.get('sentiment', 'N/A')}
+Injuries: {signal.get('injuries', 'N/A')}
+Weather: {signal.get('weather', 'N/A')}
+Matchup Mismatch: {signal.get('matchup', 'N/A')}
+Composite Score: {signal.get('composite_score', 'N/A')}
 [bankroll=${BANKROLL}]
 """
 
@@ -75,6 +65,10 @@ def extract_confidence_score(text):
         return None
 
 def main():
+    test_games = [
+        {"home_team": "Florida State", "away_team": "Miami FL", "sport": "ncaaf"},
+        {"home_team": "Detroit Tigers", "away_team": "Kansas City Royals", "sport": "mlb"}
+    ]
     signals = get_all_composite_signals(test_games)
     for signal in signals:
         prompt = build_gpt_prompt(signal)
@@ -85,17 +79,8 @@ def main():
             continue
 
         send_to_discord(recommendation)
-        log_feedback(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signal['game'], recommendation, confidence)
+        log_feedback(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signal.get('matchup', 'Unknown'), recommendation, confidence)
 
 if __name__ == "__main__":
     main()
-if __name__ == "__main__":
-    test_games = [
-        {"home_team": "Florida State", "away_team": "Miami FL", "sport": "ncaaf"},
-        {"home_team": "Georgia", "away_team": "Tennessee", "sport": "ncaaf"},
-        {"home_team": "Alabama", "away_team": "Auburn", "sport": "ncaaf"}
-    ]
 
-    results = get_all_composite_signals(test_games)
-    for r in results:
-        print(r)
