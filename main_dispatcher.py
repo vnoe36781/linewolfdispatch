@@ -64,9 +64,16 @@ def extract_confidence_score(text):
     try:
         for line in text.splitlines():
             if "confidence" in line.lower():
-                return float([word for word in line.split() if word.replace('.', '', 1).isdigit()][0])
+                for word in line.split():
+                    if "/" in word and word.count("/") == 1:
+                        numerator = word.split("/")[0]
+                        if numerator.replace('.', '', 1).isdigit():
+                            return float(numerator)
+                    elif word.replace('.', '', 1).isdigit():
+                        return float(word)
     except:
         return None
+
 
 def main():
     test_games = [
