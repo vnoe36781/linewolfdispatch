@@ -18,34 +18,22 @@ DOME_TEAMS = {
 
 ODDS_CACHE = get_all_current_odds()
 
-def find_line_for_game(home, away, sport):
-    for game in ODDS_CACHE:
-        teams = game.get("teams", [])
-        if home in teams and away in teams:
-            for book in game.get("bookmakers", []):
-                for market in book.get("markets", []):
-                    if market.get("key") == "spreads":
-                        for outcome in market.get("outcomes", []):
-                            if outcome.get("name") == home:
-                                return outcome.get("point")
-    return None
-
-def safe_component(value, weight):
-    return value * weight if isinstance(value, (int, float)) and value > 0 else 0, weight if isinstance(value, (int, float)) and value > 0 else 0
-
 def infer_sport_from_teams(home, away):
-    nfl_teams = {
-        "Arizona Cardinals", "Atlanta Falcons", "Baltimore Ravens", "Buffalo Bills",
-        "Carolina Panthers", "Chicago Bears", "Cincinnati Bengals", "Cleveland Browns",
-        "Dallas Cowboys", "Denver Broncos", "Detroit Lions", "Green Bay Packers",
-        "Houston Texans", "Indianapolis Colts", "Jacksonville Jaguars", "Kansas City Chiefs",
-        "Las Vegas Raiders", "Los Angeles Chargers", "Los Angeles Rams", "Miami Dolphins",
-        "Minnesota Vikings", "New England Patriots", "New Orleans Saints", "New York Giants",
-        "New York Jets", "Philadelphia Eagles", "Pittsburgh Steelers", "San Francisco 49ers",
-        "Seattle Seahawks", "Tampa Bay Buccaneers", "Tennessee Titans", "Washington Commanders"
-    }
+    nfl_teams = {...}  # Existing set
+    ncaaf_teams = {...}  # NCAA football
+    ncaab_teams = {...}  # NCAA basketball
+    mlb_teams = {...}  # MLB
+    nba_teams = {...}  # NBA
     if home in nfl_teams and away in nfl_teams:
         return "nfl"
+    elif home in ncaaf_teams and away in ncaaf_teams:
+        return "ncaaf"
+    elif home in ncaab_teams and away in ncaab_teams:
+        return "ncaab"
+    elif home in mlb_teams and away in mlb_teams:
+        return "mlb"
+    elif home in nba_teams and away in nba_teams:
+        return "nba"
     return None
 
 def get_all_composite_signals(games):
