@@ -8,7 +8,6 @@ from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
 from odds_API import get_all_current_odds
 
-# Indoor game exclusions
 INDOOR_SPORTS = {"nba", "ncaab"}
 DOME_TEAMS = {
     "New Orleans Saints", "Atlanta Falcons", "Detroit Lions", "Minnesota Vikings",
@@ -16,7 +15,6 @@ DOME_TEAMS = {
     "Dallas Cowboys", "Houston Texans"
 }
 
-# Fetch once per run for performance
 ODDS_CACHE = get_all_current_odds()
 
 def find_line_for_game(home, away, sport):
@@ -38,10 +36,13 @@ def get_all_composite_signals(games):
         away = game.get("away_team")
         sport = game.get("sport")
 
+        print(f"[START] Processing: {away} at {home} ({sport})")
+
         home_coords = get_team_coordinates(home)
         away_coords = get_team_coordinates(away)
 
         if not home_coords or not away_coords:
+            print(f"[SKIP] Coordinates missing: {home} → {home_coords}, {away} → {away_coords}")
             continue
 
         if sport.lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
@@ -60,15 +61,9 @@ def get_all_composite_signals(games):
             sentiment_away = 0.0
 
         matchup_score = get_matchup_score(home, away, sport)
-
         pace_score = get_pace_score(home, away, sport)
-        pace_penalty = 0.0 if pace_score == 0.0 else 0.0
-
         ref_score = get_ref_score(home, away, sport)
-        ref_penalty = 0.0 if ref_score == 0.0 else 0.0
-
         promo_score = get_promo_score(home, away, sport)
-        promo_penalty = 0.0 if promo_score == 0.0 else 0.0
 
         composite_score = (
             matchup_score * 0.30 +
@@ -81,17 +76,16 @@ def get_all_composite_signals(games):
             promo_score * 0.10
         )
 
-        composite_score -= (pace_penalty + ref_penalty + promo_penalty)
-
-        signals.append({
+        composite_score = round(composite_score, 2)
+        signal = {
             "matchup": f"{away} at {home}",
-            "composite_score": round(composite_score, 2),
+            "composite_score": composite_score,
             "line": find_line_for_game(home, away, sport) or "N/A",
-            "handle": "N/A",  # placeholder
+            "handle": "N/A",
             "sentiment": f"H: {sentiment_home}, A: {sentiment_away}",
-            "injuries": "TBD",  # integrate if needed
+            "injuries": "TBD",
             "weather": weather_home["summary"],
-            "score": round(composite_score, 2),
+            "score": composite_score,
             "components": {
                 "matchup": matchup_score,
                 "sentiment_home": sentiment_home,
@@ -102,8 +96,13 @@ def get_all_composite_signals(games):
                 "ref": ref_score,
                 "promo": promo_score
             }
-        })
+        }
+
+        print(f"[DONE] Created signal for {away} at {home} → Score: {composite_score}")
+        signals.append(signal)
+
     return signals
+
 
 # Note: Once pace.py, ref_trends.py, and promo_scraper.py are fully implemented,
 # remove suppression logic for zero-value scores.
