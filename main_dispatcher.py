@@ -13,7 +13,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 BANKROLL = 20000
 FEEDBACK_FILE = "feedback_tracker.csv"
-CONFIDENCE_THRESHOLD = 4.0
+CONFIDENCE_THRESHOLD = 0.0
 
 # Fail fast if missing env vars
 assert OPENAI_API_KEY, "❌ Missing or invalid OPENAI_API_KEY environment variable."
