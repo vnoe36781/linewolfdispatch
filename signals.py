@@ -47,7 +47,10 @@ def get_all_composite_signals(games):
             print(f"[SKIP] Coordinates missing: {home} → {home_coords}, {away} → {away_coords}")
             continue
 
-        if sport.lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
+        if not sport:
+    print(f"[WARN] Missing sport value for matchup: {home} vs {away}")
+
+if (sport or "").lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
             weather_home = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
             weather_away = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
         else:
