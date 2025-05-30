@@ -7,6 +7,7 @@ from pace import get_pace_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
 from odds_API import get_all_current_odds
+from datetime import datetime
 
 INDOOR_SPORTS = {"nba", "ncaab"}
 DOME_TEAMS = {
@@ -32,12 +33,55 @@ def find_line_for_game(home, away, sport):
 def safe_component(value, weight):
     return value * weight if isinstance(value, (int, float)) and value > 0 else 0, weight if isinstance(value, (int, float)) and value > 0 else 0
 
+def infer_sport_from_teams(home, away):
+    nfl_teams = {
+        "Arizona Cardinals", "Atlanta Falcons", "Baltimore Ravens", "Buffalo Bills",
+        "Carolina Panthers", "Chicago Bears", "Cincinnati Bengals", "Cleveland Browns",
+        "Dallas Cowboys", "Denver Broncos", "Detroit Lions", "Green Bay Packers",
+        "Houston Texans", "Indianapolis Colts", "Jacksonville Jaguars", "Kansas City Chiefs",
+        "Las Vegas Raiders", "Los Angeles Chargers", "Los Angeles Rams", "Miami Dolphins",
+        "Minnesota Vikings", "New England Patriots", "New Orleans Saints", "New York Giants",
+        "New York Jets", "Philadelphia Eagles", "Pittsburgh Steelers", "San Francisco 49ers",
+        "Seattle Seahawks", "Tampa Bay Buccaneers", "Tennessee Titans", "Washington Commanders"
+    }
+    if home in nfl_teams and away in nfl_teams:
+        return "nfl"
+    return None
+
 def get_all_composite_signals(games):
     signals = []
+    nfl_earliest_game = None
+    nfl_earliest_time = None
+
     for game in games:
         home = game.get("home_team")
         away = game.get("away_team")
         sport = game.get("sport")
+        commence_time = game.get("commence_time")
+
+        if not sport:
+            sport = infer_sport_from_teams(home, away)
+            if sport:
+                print(f"[INFO] Inferred sport for {away} at {home} → {sport}")
+            else:
+                print(f"[WARN] Missing sport value for matchup: {home} vs {away}")
+
+        if sport == "nfl":
+            game_time = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
+            if not nfl_earliest_time or game_time < nfl_earliest_time:
+                nfl_earliest_time = game_time
+                nfl_earliest_game = game
+
+    for game in games:
+        home = game.get("home_team")
+        away = game.get("away_team")
+        sport = game.get("sport")
+
+        if not sport:
+            sport = infer_sport_from_teams(home, away)
+
+        if sport == "nfl" and game != nfl_earliest_game:
+            continue
 
         print(f"[START] Processing: {away} at {home} ({sport})")
 
@@ -46,9 +90,6 @@ def get_all_composite_signals(games):
         if not home_coords or not away_coords:
             print(f"[SKIP] Coordinates missing: {home} → {home_coords}, {away} → {away_coords}")
             continue
-
-        if not sport:
-            print(f"[WARN] Missing sport value for matchup: {home} vs {away}")
 
         if (sport or "").lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
             weather_home = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
@@ -109,6 +150,7 @@ def get_all_composite_signals(games):
         signals.append(signal)
 
     return signals
+
 
 
 # Note: Once pace.py, ref_trends.py, and promo_scraper.py are fully implemented,
