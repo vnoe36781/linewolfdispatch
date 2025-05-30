@@ -76,7 +76,7 @@ def extract_confidence_score(text):
 
 
 def main():
-from odds_API import get_all_current_odds
+    from odds_API import get_all_current_odds
 
 all_games = get_all_current_odds()
 signals = get_all_composite_signals(all_games)
