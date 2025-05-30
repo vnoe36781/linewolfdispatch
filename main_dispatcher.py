@@ -75,7 +75,7 @@ def extract_confidence_score(text):
         return None
 
 def main():
-    signals = get_all_composite_signals()
+    signals = get_all_composite_signals(test_games)
     for signal in signals:
         prompt = build_gpt_prompt(signal)
         recommendation = get_openai_recommendation(prompt)
