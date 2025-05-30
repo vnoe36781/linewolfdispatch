@@ -46,11 +46,11 @@ def get_all_composite_signals(games):
             weather_away = get_weather_score(*away_coords, sport)
 
         # Sentiment
-        sentiment_home = sentiment_home(home)
+        sentiment_home = get_sentiment_score(home)
         if not isinstance(sentiment_home, (int, float)):
             sentiment_home = 0.0
 
-        sentiment_away = sentiment_home(away)
+        sentiment_away = sentiment_home_score(away)
         if not isinstance(sentiment_away, (int, float)):
             sentiment_away = 0.0
 
