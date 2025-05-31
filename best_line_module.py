@@ -37,4 +37,3 @@ def fetch_best_lines(sport):
 
     print(f"Error fetching odds for {sport}: {response.status_code}")
     return []
-```
