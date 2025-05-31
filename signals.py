@@ -97,7 +97,7 @@ def get_all_composite_signals(games):
         signals.append(signal)
 
     return signals
-```
+
 
 
 
