@@ -1,4 +1,4 @@
-```python
+
 import os
 from weather import get_weather_score
 from team_locations import get_team_coordinates
