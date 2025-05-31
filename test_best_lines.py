@@ -6,4 +6,4 @@ sport = "americanfootball_nfl"
 # Call the function and print the results
 best_lines = fetch_best_lines(sport)
 print("Best Lines:", best_lines)
-```
+
