@@ -1,3 +1,4 @@
+```python
 import os
 from weather import get_weather_score
 from team_locations import get_team_coordinates
@@ -6,8 +7,7 @@ from sentiment import get_sentiment_score
 from pace import get_pace_score
 from ref_trends import get_ref_score
 from promo_scraper import get_promo_score
-from odds_API import get_all_current_odds
-from datetime import datetime
+from best_line_module import fetch_best_lines
 
 INDOOR_SPORTS = {"nba", "ncaab"}
 DOME_TEAMS = {
@@ -16,60 +16,15 @@ DOME_TEAMS = {
     "Dallas Cowboys", "Houston Texans"
 }
 
-ODDS_CACHE = get_all_current_odds()
-
-def infer_sport_from_teams(home, away):
-    nfl_teams = {...}  # Existing set
-    ncaaf_teams = {...}  # NCAA football
-    ncaab_teams = {...}  # NCAA basketball
-    mlb_teams = {...}  # MLB
-    nba_teams = {...}  # NBA
-    if home in nfl_teams and away in nfl_teams:
-        return "nfl"
-    elif home in ncaaf_teams and away in ncaaf_teams:
-        return "ncaaf"
-    elif home in ncaab_teams and away in ncaab_teams:
-        return "ncaab"
-    elif home in mlb_teams and away in mlb_teams:
-        return "mlb"
-    elif home in nba_teams and away in nba_teams:
-        return "nba"
-    return None
+def safe_component(value, weight):
+    return value * weight if isinstance(value, (int, float)) and value > 0 else 0, weight if isinstance(value, (int, float)) and value > 0 else 0
 
 def get_all_composite_signals(games):
     signals = []
-    nfl_earliest_game = None
-    nfl_earliest_time = None
-
     for game in games:
         home = game.get("home_team")
         away = game.get("away_team")
         sport = game.get("sport")
-        commence_time = game.get("commence_time")
-
-        if not sport:
-            sport = infer_sport_from_teams(home, away)
-            if sport:
-                print(f"[INFO] Inferred sport for {away} at {home} → {sport}")
-            else:
-                print(f"[WARN] Missing sport value for matchup: {home} vs {away}")
-
-        if sport == "nfl":
-            game_time = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
-            if not nfl_earliest_time or game_time < nfl_earliest_time:
-                nfl_earliest_time = game_time
-                nfl_earliest_game = game
-
-    for game in games:
-        home = game.get("home_team")
-        away = game.get("away_team")
-        sport = game.get("sport")
-
-        if not sport:
-            sport = infer_sport_from_teams(home, away)
-
-        if sport == "nfl" and game != nfl_earliest_game:
-            continue
 
         print(f"[START] Processing: {away} at {home} ({sport})")
 
@@ -79,6 +34,9 @@ def get_all_composite_signals(games):
             print(f"[SKIP] Coordinates missing: {home} → {home_coords}, {away} → {away_coords}")
             continue
 
+        if not sport:
+            print(f"[WARN] Missing sport value for matchup: {home} vs {away}")
+
         if (sport or "").lower() in INDOOR_SPORTS or home in DOME_TEAMS or away in DOME_TEAMS:
             weather_home = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
             weather_away = {"score": 5.0, "summary": "Indoor game – weather not applicable."}
@@ -86,7 +44,6 @@ def get_all_composite_signals(games):
             weather_home = get_weather_score(*home_coords, sport)
             weather_away = get_weather_score(*away_coords, sport)
 
-        # Pull scores
         matchup_score = get_matchup_score(home, away, sport)
         sentiment_home = get_sentiment_score(home)
         sentiment_away = get_sentiment_score(away)
@@ -94,7 +51,6 @@ def get_all_composite_signals(games):
         ref_score = get_ref_score(home, away, sport)
         promo_score = get_promo_score(home, away, sport)
 
-        # Weighted scoring w/ null suppression
         score_total = 0
         weight_total = 0
 
@@ -113,10 +69,13 @@ def get_all_composite_signals(games):
 
         composite_score = round(score_total / weight_total, 2) if weight_total > 0 else 0.0
 
+        # Fetch the best line data
+        best_line_data = fetch_best_lines(sport)
+
         signal = {
             "matchup": f"{away} at {home}",
             "composite_score": composite_score,
-            "line": find_line_for_game(home, away, sport) or "N/A",
+            "line": best_line_data or "N/A",
             "handle": "N/A",
             "sentiment": f"H: {sentiment_home}, A: {sentiment_away}",
             "injuries": "TBD",
@@ -138,6 +97,8 @@ def get_all_composite_signals(games):
         signals.append(signal)
 
     return signals
+```
+
 
 
 
